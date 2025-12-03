@@ -31,22 +31,37 @@ let parse s = String.split_lines s |> List.map ~f:parse_line
 let f1 s =
   let pos = ref 50 in
   let zeroes = ref 0 in
-  parse s |> List.iter ~f:(fun {dir; steps} ->
-      begin
-      match dir with
-      | L -> pos := (!pos - steps) % 100
-      | R -> pos := (!pos + steps) % 100
-      end;
-      if !pos = 0 then
-          Int.incr zeroes
-  );
+  parse s
+  |> List.iter ~f:(fun { dir; steps } ->
+    (match dir with
+     | L -> pos := (!pos - steps) % 100
+     | R -> pos := (!pos + steps) % 100);
+    if !pos = 0 then Int.incr zeroes);
   !zeroes
 ;;
 
-let%expect_test "f1" =
-  f1 sample |> [%sexp_of: int] |> print_s;
-  [%expect {| 3 |}]
+let f2 s =
+  let pos = ref 50 in
+  let zeroes = ref 0 in
+  parse s
+  |> List.iter ~f:(fun { dir; steps } ->
+    match dir with
+    | L ->
+      for _ = 1 to steps do
+        pos := (!pos - 1) % 100;
+        if !pos = 0 then Int.incr zeroes
+      done
+    | R ->
+      for _ = 1 to steps do
+        pos := (!pos + 1) % 100;
+        if !pos = 0 then Int.incr zeroes
+      done);
+  !zeroes
 ;;
 
-let f2 _ = 0
+let%expect_test "f2" =
+  f2 sample |> [%sexp_of: int] |> print_s;
+  [%expect {| 6 |}]
+;;
+
 let run () = Run.run ~f1 ~f2 Day01_input.data
