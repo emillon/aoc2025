@@ -27,15 +27,20 @@ let sample =
 ;;
 
 let parse s = String.split_lines s |> List.map ~f:parse_line
+let turn pos steps = (pos + steps) % 100
+
+let turn_dir pos dir steps =
+  match dir with
+  | L -> turn pos (-steps)
+  | R -> turn pos steps
+;;
 
 let f1 s =
   let pos = ref 50 in
   let zeroes = ref 0 in
   parse s
   |> List.iter ~f:(fun { dir; steps } ->
-    (match dir with
-     | L -> pos := (!pos - steps) % 100
-     | R -> pos := (!pos + steps) % 100);
+    pos := turn_dir !pos dir steps;
     if !pos = 0 then Int.incr zeroes);
   !zeroes
 ;;
@@ -45,17 +50,10 @@ let f2 s =
   let zeroes = ref 0 in
   parse s
   |> List.iter ~f:(fun { dir; steps } ->
-    match dir with
-    | L ->
-      for _ = 1 to steps do
-        pos := (!pos - 1) % 100;
-        if !pos = 0 then Int.incr zeroes
-      done
-    | R ->
-      for _ = 1 to steps do
-        pos := (!pos + 1) % 100;
-        if !pos = 0 then Int.incr zeroes
-      done);
+    for _ = 1 to steps do
+      pos := turn_dir !pos dir 1;
+      if !pos = 0 then Int.incr zeroes
+    done);
   !zeroes
 ;;
 
