@@ -25,26 +25,52 @@ let%expect_test _ =
     |}]
 ;;
 
+let repeats (d, min) n = n % d = 0 && n / d >= min
+
 let is_invalid_id n =
-  (n < 100 && n % 11 = 0)
-  || (n < 10000 && n % 101 = 0 && n / 101 >= 10)
-  || (n < 1000000 && n % 1001 = 0 && n / 1001 >= 100)
-  || (n < 100000000 && n % 10001 = 0 && n / 10001 >= 1000)
-  || (n < 10000000000 && n % 100001 = 0 && n / 100001 >= 10000)
-  || (n < 1000000000000 && n % 1000001 = 0 && n / 1000001 >= 100000)
+  let mask =
+    match () with
+    | _ when n <= 99 -> 11, 1
+    | _ when n <= 9999 -> 101, 10
+    | _ when n <= 999999 -> 1001, 100
+    | _ when n <= 99999999 -> 10001, 1000
+    | _ when n <= 9999999999 -> 100001, 10000
+    | _ -> assert false
+  in
+  repeats mask n
 ;;
 
-let f1 s =
+let f_gen s ~f =
   parse s
   |> List.concat_map ~f:(fun (min, max) ->
-    List.range min max ~stop:`inclusive |> List.filter ~f:is_invalid_id)
+    List.range min max ~stop:`inclusive |> List.filter ~f)
   |> Algo.sum
 ;;
 
-let%expect_test _ =
-  print_s [%message (f1 sample : int)];
-  [%expect {| ("f1 sample" 1227775554) |}]
+let f1 = f_gen ~f:is_invalid_id
+
+let is_invalid_id2 n =
+  let masks =
+    match () with
+    | _ when n <= 99 -> [ 11, 1 ]
+    | _ when n <= 999 -> [ 111, 1 ]
+    | _ when n <= 9999 -> [ 1111, 1; 0101, 10 ]
+    | _ when n <= 99999 -> [ 11111, 1 ]
+    | _ when n <= 999999 -> [ 111111, 1; 010101, 10; 001001, 100 ]
+    | _ when n <= 9999999 -> [ 1111111, 1 ]
+    | _ when n <= 99999999 -> [ 11111111, 1; 01010101, 10; 00010001, 1000 ]
+    | _ when n <= 999999999 -> [ 111111111, 1; 001001001, 100 ]
+    | _ when n <= 9999999999 -> [ 1111111111, 1; 0101010101, 10; 0000100001, 10000 ]
+    | _ -> assert false
+  in
+  List.exists masks ~f:(fun mask -> repeats mask n)
 ;;
 
-let f2 _ = 0
+let f2 = f_gen ~f:is_invalid_id2
+
+let%expect_test _ =
+  print_s [%message (f1 sample : int) (f2 sample : int)];
+  [%expect {| (("f1 sample" 1227775554) ("f2 sample" 4174379265)) |}]
+;;
+
 let run () = Run.run ~f1 ~f2 Day02_input.data

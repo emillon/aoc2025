@@ -1,4 +1,4 @@
 Day 01 part 1: 1182
 Day 01 part 2: 6907
 Day 02 part 1: 13919717792
-Day 02 part 2: 0
+Day 02 part 2: 14582313461
