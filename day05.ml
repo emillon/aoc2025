@@ -26,7 +26,12 @@ let f1 s =
     List.exists t.ranges ~f:(fun (a, b) -> a <= n && n <= b))
 ;;
 
-let f2 _ = 0
+let f2 s =
+  let t = parse s in
+  List.fold t.ranges ~init:Diet.Int.empty ~f:(fun d (a, b) ->
+    Diet.Int.add (Diet.Int.Interval.make a b) d)
+  |> Diet.Int.cardinal
+;;
 
 let sample =
   String.concat_lines
@@ -34,12 +39,12 @@ let sample =
 ;;
 
 let%expect_test _ =
-  print_s [%message (parse sample : t) (f1 sample : int)];
+  print_s [%message (parse sample : t) (f1 sample : int) (f2 sample : int)];
   [%expect
     {|
     (("parse sample"
       ((ranges ((3 5) (10 14) (16 20) (12 18))) (ingredients (1 5 8 11 17 32))))
-     ("f1 sample" 3))
+     ("f1 sample" 3) ("f2 sample" 14))
     |}]
 ;;
 
