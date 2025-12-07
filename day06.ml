@@ -61,8 +61,7 @@ let sample =
 
 let%expect_test _ =
   print_s [%message (f1 sample : int) (f2 sample : int)];
-  [%expect
-    {| (("f1 sample" 4277556) ("f2 sample" 3263827)) |}]
+  [%expect {| (("f1 sample" 4277556) ("f2 sample" 3263827)) |}]
 ;;
 
 let run () = Run.run ~f1 ~f2 Day06_input.data
