@@ -1,6 +1,7 @@
 module Vec3 = struct
   type t = int * int * int [@@deriving compare, equal, hash, sexp]
 
+  let x (x, _, _) = x
   let diff (ax, ay, az) (bx, by, bz) = ax - bx, ay - by, az - bz
   let l2_norm_sq (x, y, z) = (x * x) + (y * y) + (z * z)
   let l2_dist_sq a b = l2_norm_sq (diff a b)
@@ -26,18 +27,20 @@ let pairs ~compare l =
   x, y
 ;;
 
+module G = Graph.Persistent.Graph.Concrete (Vec3)
+module C = Graph.Components.Make (G)
+
+let sorted_pairs points =
+  pairs ~compare:Vec3.compare points
+  |> List.sort
+       ~compare:(Comparable.lift Int.compare ~f:(fun (a, b) -> Vec3.l2_dist_sq a b))
+;;
+
 let f1 ?(n = 1000) s =
   let points = parse s in
-  let module V = Vec3 in
-  let module G = Graph.Persistent.Graph.Concrete (V) in
-  let sorted_pairs =
-    pairs ~compare:Vec3.compare points
-    |> List.sort
-         ~compare:(Comparable.lift Int.compare ~f:(fun (a, b) -> Vec3.l2_dist_sq a b))
-  in
+  let sorted_pairs = sorted_pairs points in
   let top_pairs = List.take sorted_pairs n in
   let g = List.fold top_pairs ~init:G.empty ~f:(fun g (a, b) -> G.add_edge g a b) in
-  let module C = Graph.Components.Make (G) in
   let sccs = C.scc_list g in
   let scc_sizes =
     List.map sccs ~f:List.length |> List.sort ~compare:[%compare: int Comparable.reversed]
@@ -45,7 +48,24 @@ let f1 ?(n = 1000) s =
   List.take scc_sizes 3 |> Algo.product
 ;;
 
-let f2 _ = 0
+let is_connected ~npoints g =
+  let sccs = C.scc_array g in
+  Array.length sccs = 1 && List.length sccs.(0) = npoints
+;;
+
+(* TODO: slow - could use an online algo for connectivity using union find *)
+let f2 s =
+  let points = parse s in
+  let sorted_pairs = sorted_pairs points in
+  let npoints = List.length points in
+  List.fold_until
+    sorted_pairs
+    ~init:G.empty
+    ~f:(fun g (a, b) ->
+      let g' = G.add_edge g a b in
+      if is_connected ~npoints g' then Stop (Vec3.x a * Vec3.x b) else Continue g')
+    ~finish:(fun _ -> assert false)
+;;
 
 let sample =
   String.concat_lines
@@ -74,7 +94,7 @@ let sample =
 
 let%expect_test _ =
   print_s [%message (f1 ~n:10 sample : int) (f2 sample : int)];
-  [%expect {| (("f1 ~n:10 sample" 40) ("f2 sample" 0)) |}]
+  [%expect {| (("f1 ~n:10 sample" 40) ("f2 sample" 25272)) |}]
 ;;
 
 let run () = Run.run ~f1 ~f2 Day08_input.data
