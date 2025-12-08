@@ -12,3 +12,5 @@ Day 06 part 1: 4722948564882
 Day 06 part 2: 9581313737063
 Day 07 part 1: 1640
 Day 07 part 2: 40999072541589
+Day 08 part 1: 66912
+Day 08 part 2: 0
