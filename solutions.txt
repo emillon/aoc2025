@@ -18,5 +18,5 @@ Day 09 part 1: 4764078684
 Day 09 part 2: 1652344888
 Day 10 part 1: 545
 Day 10 part 2: 0
-Day 11 part 1: 0
+Day 11 part 1: 688
 Day 11 part 2: 0
