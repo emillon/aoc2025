@@ -12,7 +12,6 @@ let read_input_file = function
 ;;
 
 type format =
-  | Hex
   | Dots
 
 module Dots = struct
@@ -48,7 +47,7 @@ end
 
 let format =
   let open Cmdliner.Arg in
-  required & opt (some & enum [ "hex", Hex; "dots", Dots ]) None & info [ "format" ]
+  required & opt (some & enum [ "dots", Dots ]) None & info [ "format" ]
 ;;
 
 module Encode = struct
@@ -60,7 +59,6 @@ module Encode = struct
     and+ format in
     let data = read_input_file input_file in
     match format with
-    | Hex -> printf "%s\n" (Hex_encode.to_hex data)
     | Dots -> Dots.encode data
   ;;
 
@@ -81,7 +79,6 @@ module Decode = struct
     let encoded = read_input_file input_file in
     let data =
       match format with
-      | Hex -> String.strip encoded |> Hex_encode.from_hex
       | Dots -> Dots.decode encoded
     in
     if raw then printf "%s" data else printf "let data = {|%s|}\n" data

@@ -19,9 +19,7 @@
           buildInputs = with pkgs.ocamlPackages; [
             angstrom
             cmdliner
-            core_kernel
             diet
-            hex_encode
             ocamlgraph
             ppx_jane
             z3
