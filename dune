@@ -1,6 +1,6 @@
 (library
  (public_name aoc2025)
- (libraries angstrom cmdliner core_kernel.pairing_heap diet ocamlgraph re)
+ (libraries angstrom cmdliner core_kernel.pairing_heap diet ocamlgraph re z3)
  (flags :standard -open Base -open Stdio)
  (inline_tests)
  (preprocess

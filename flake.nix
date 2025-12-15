@@ -24,6 +24,7 @@
             hex_encode
             ocamlgraph
             ppx_jane
+            z3
           ];
         };
         devShells.default = pkgs.mkShell {

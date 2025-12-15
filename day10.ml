@@ -68,54 +68,42 @@ let fewest_presses t =
 
 let f1 s = parse s |> List.map ~f:fewest_presses |> Algo.sum
 
-module IntArray = struct
-  module T = struct
-    type t = int array [@@deriving compare, sexp]
-  end
-
-  include T
-  include Comparable.Make (T)
-
-  exception Over
-
-  let push_button a b wv =
-    let r = Array.copy a in
-    List.iter b ~f:(fun i ->
-      let new_val = r.(i) + 1 in
-      if Int.(new_val > wv.(i)) then raise Over else r.(i) <- new_val);
-    r
-  ;;
-end
+let z3_exprs ctx t =
+  let module I = Z3.Arithmetic.Integer in
+  let module B = Z3.Boolean in
+  let module A = Z3.Arithmetic in
+  let p =
+    Array.init (List.length t.buttons) ~f:(fun i ->
+      I.mk_const ctx (Z3.Symbol.mk_int ctx i))
+  in
+  let ( == ) = B.mk_eq ctx in
+  let ( >= ) = A.mk_ge ctx in
+  let int n = I.mk_numeral_i ctx n in
+  let joltage_sum i =
+    List.filter_mapi t.buttons ~f:(fun ibtn l ->
+      Option.some_if (List.mem l i ~equal:Int.equal) p.(ibtn))
+    |> A.mk_add ctx
+  in
+  let press_eqns = List.mapi t.joltages ~f:(fun i jolt -> joltage_sum i == int jolt) in
+  let pos_eqns = Array.to_list p |> List.map ~f:(fun pi -> pi >= int 0) in
+  let eqns = press_eqns @ pos_eqns in
+  let all_presses = A.mk_add ctx (Array.to_list p) in
+  eqns, all_presses
+;;
 
 let fewest_presses2 t =
-  let q = Queue.create () in
-  let win_val = Array.of_list t.joltages in
-  let is_winning (a, _) = Array.equal Int.equal a win_val in
-  let initial_state = Array.of_list_map t.joltages ~f:(fun _ -> 0), 0 in
-  let visited = ref (Set.empty (module IntArray)) in
-  let is_visited (a, _) = Set.mem !visited a in
-  let mark_visited (a, _) = visited := Set.add !visited a in
-  let next (a, i) =
-    List.filter_map t.buttons ~f:(fun button ->
-      try Some (IntArray.push_button a button win_val, i + 1) with
-      | IntArray.Over -> None)
-  in
-  Queue.enqueue q initial_state;
-  let exception Found of int in
-  try
-    while not (Queue.is_empty q) do
-      let state = Queue.dequeue_exn q in
-      if is_winning state
-      then raise (Found (snd state))
-      else if is_visited state
-      then ()
-      else (
-        mark_visited state;
-        Queue.enqueue_all q (next state))
-    done;
-    assert false
-  with
-  | Found n -> n
+  let cfg = [ "model", "true"; "proof", "false" ] in
+  let ctx = Z3.mk_context cfg in
+  let opt = Z3.Optimize.mk_opt ctx in
+  let exprs, opt_expr = z3_exprs ctx t in
+  Z3.Optimize.add opt exprs;
+  let (_ : Z3.Optimize.handle) = Z3.Optimize.minimize opt opt_expr in
+  let (_ : Z3.Solver.status) = Z3.Optimize.check opt in
+  let model = Z3.Optimize.get_model opt |> Option.value_exn in
+  Z3.Model.eval model opt_expr true
+  |> Option.value_exn
+  |> Z3.Expr.to_string
+  |> Int.of_string
 ;;
 
 let f2 s = parse s |> List.map ~f:fewest_presses2 |> Algo.sum
@@ -145,5 +133,4 @@ let%expect_test _ =
     |}]
 ;;
 
-let f2 _ = 0
 let run () = Run.run ~f1 ~f2 Day10_input.data
